@@ -1,0 +1,19 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Business Bot with Admin Dashboard",
+  "main": "bot/index.js",
+  "scripts": {
+    "start": "node bot/index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "latest",
+    "firebase-admin": "latest",
+    "openai": "latest",
+    "qrcode": "latest",
+    "axios": "latest",
+    "pino": "latest"
+  },
+  "author": "Expert Full-Stack Developer",
+  "license": "ISC"
+}
