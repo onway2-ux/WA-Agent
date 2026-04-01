@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node bot/index.js"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@whiskeysockets/baileys": "latest",
     "firebase-admin": "latest",
