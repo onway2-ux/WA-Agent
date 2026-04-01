@@ -10,9 +10,9 @@ async function askAI(userMessage, context) {
   const { businessInfo, services, aiPersonality } = context;
 
   console.log("AI Request starting...");
-  console.log("Base URL:", process.env.DEEPSEEK_BASE_URL);
+  console.log("Calling AI with baseURL:", process.env.DEEPSEEK_BASE_URL);
   console.log("API Key exists:", !!process.env.DEEPSEEK_API_KEY);
-  console.log("Model:", "deepseek-r1-0528");
+  console.log("Using model: deepseek-r1-0528");
 
   const openai = new OpenAI({
     apiKey: process.env.DEEPSEEK_API_KEY,
@@ -42,8 +42,36 @@ async function askAI(userMessage, context) {
       max_tokens: 500,
     });
 
-    console.log("AI Response received:", response);
-    return response.choices[0].message.content.trim();
+    console.log("Raw API Response:", JSON.stringify(response));
+
+    let aiReply = null;
+
+    // Try standard OpenAI format 
+    if (response?.choices?.[0]?.message?.content) { 
+      aiReply = response.choices[0].message.content; 
+    } 
+    // Try direct content format 
+    else if (response?.content?.[0]?.text) { 
+      aiReply = response.content[0].text; 
+    } 
+    // Try direct text format 
+    else if (response?.text) { 
+      aiReply = response.text; 
+    } 
+    // Try message format 
+    else if (response?.message?.content) { 
+      aiReply = response.message.content; 
+    } 
+    else { 
+      console.error("Unknown response format:", JSON.stringify(response));
+      aiReply = null; 
+    } 
+
+    if (!aiReply) { 
+      return "Sorry, I could not process your request."; 
+    } 
+
+    return aiReply.trim();
   } catch (error) {
     console.error("AI Error full details:", error);
     console.error("AI Error message:", error.message);
