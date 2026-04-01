@@ -3,81 +3,82 @@ const { OpenAI } = require('openai');
 /**
  * Call DeepSeek AI via OpenAI SDK with custom baseURL
  * @param {string} userMessage 
- * @param {object} context { businessInfo, services, aiPersonality }
+ * @param {string} businessContext 
  * @returns {Promise<string>}
  */
-async function askAI(userMessage, context) {
-  const { businessInfo, services, aiPersonality } = context;
-
-  console.log("AI Request starting...");
-  console.log("Calling AI with baseURL:", process.env.DEEPSEEK_BASE_URL);
-  console.log("API Key exists:", !!process.env.DEEPSEEK_API_KEY);
-  console.log("Using model: deepseek-r1-0528");
-
+async function askAI(userMessage, businessContext) {
+  // INITIALIZE CLIENT
   const openai = new OpenAI({
     apiKey: process.env.DEEPSEEK_API_KEY,
     baseURL: process.env.DEEPSEEK_BASE_URL,
   });
 
-  const systemPrompt = `
-    You are a helpful WhatsApp business assistant.
-    Business context: ${businessInfo}
-    Available services: ${JSON.stringify(services)}
-    AI personality/tone: ${aiPersonality}
-    
-    Instructions:
-    - Keep responses short, friendly, and WhatsApp-appropriate.
-    - Do NOT use markdown formatting (like bold, italics, etc.) in replies.
-    - If asked something outside business scope, politely redirect the user.
-  `;
+  // STEP 1 — Build system prompt
+  const systemPrompt = "You are a helpful WhatsApp business assistant. Business Info: " + businessContext + " Keep responses short and WhatsApp-friendly. Do not use markdown formatting.";
 
   try {
+    // STEP 2 — Make API call
     const response = await openai.chat.completions.create({
       model: "deepseek-r1-0528",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage }
       ],
-      temperature: 0.7,
       max_tokens: 500,
     });
 
-    console.log("Raw API Response:", JSON.stringify(response));
+    // STEP 3 — Log raw response BEFORE any parsing
+    console.log("=== RAW AI RESPONSE START ===");
+    console.log(JSON.stringify(response, null, 2));
+    console.log("=== RAW AI RESPONSE END ===");
 
+    // STEP 4 — Parse response with ALL possible formats
     let aiReply = null;
 
-    // Try standard OpenAI format 
-    if (response?.choices?.[0]?.message?.content) { 
-      aiReply = response.choices[0].message.content; 
+    if (response?.choices?.[0]?.message?.content) {
+      aiReply = response.choices[0].message.content;
+      console.log("Parsed via: choices[0].message.content");
     } 
-    // Try direct content format 
-    else if (response?.content?.[0]?.text) { 
-      aiReply = response.content[0].text; 
+    else if (response?.choices?.[0]?.text) {
+      aiReply = response.choices[0].text;
+      console.log("Parsed via: choices[0].text");
     } 
-    // Try direct text format 
-    else if (response?.text) { 
-      aiReply = response.text; 
+    else if (response?.content?.[0]?.text) {
+      aiReply = response.content[0].text;
+      console.log("Parsed via: content[0].text");
     } 
-    // Try message format 
-    else if (response?.message?.content) { 
-      aiReply = response.message.content; 
+    else if (response?.message?.content) {
+      aiReply = response.message.content;
+      console.log("Parsed via: message.content");
     } 
-    else { 
-      console.error("Unknown response format:", JSON.stringify(response));
-      aiReply = null; 
+    else if (response?.text) {
+      aiReply = response.text;
+      console.log("Parsed via: response.text");
     } 
+    else if (typeof response === 'string') {
+      aiReply = response;
+      console.log("Parsed via: direct string");
+    } 
+    else {
+      console.error("UNKNOWN FORMAT — could not parse response");
+      console.error("Full response:", JSON.stringify(response));
+      aiReply = null;
+    }
 
-    if (!aiReply) { 
-      return "Sorry, I could not process your request."; 
-    } 
+    // STEP 5 — Return result
+    if (!aiReply) {
+      return "Sorry, I could not process your request right now.";
+    }
+    console.log("Final AI Reply:", aiReply);
+    return aiReply;
 
-    return aiReply.trim();
   } catch (error) {
-    console.error("AI Error full details:", error);
+    // STEP 6 — Catch block must log full error details
     console.error("AI Error message:", error.message);
-    console.error("AI Error status:", error.status);
-    console.error("AI Error response:", error.response?.data);
-    return "I'm sorry, I'm having trouble processing your request right now. Please try again later.";
+    console.error("AI Error status:", error?.status);
+    console.error("AI Error response data:", JSON.stringify(error?.response?.data));
+    console.error("AI Error stack:", error.stack);
+    return "Sorry, I could not process your request right now.";
   }
 }
 
