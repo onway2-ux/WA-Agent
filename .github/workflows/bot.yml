@@ -50,8 +50,6 @@ jobs:
       - name: Run WhatsApp Bot
         env:
           FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          DEEPSEEK_BASE_URL: ${{ secrets.DEEPSEEK_BASE_URL }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser

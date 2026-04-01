@@ -38,8 +38,6 @@ async function connectToWhatsApp() {
     await writeData('/config', {
       welcomeMessage: "Hello! Welcome to our business.",
       businessInfo: "We provide professional services with excellence.",
-      aiEnabled: true,
-      aiPersonality: "Be helpful, friendly, and professional.",
       services: [
         { name: "Consultation", price: "$50", description: "Get professional advice for your business." }
       ],

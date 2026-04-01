@@ -1,5 +1,4 @@
 const { readData, db } = require('./firebase');
-const { askAI } = require('./ai');
 
 /**
  * Handle incoming WhatsApp messages using whatsapp-web.js
@@ -25,9 +24,7 @@ async function handleMessage(msg) {
       welcomeMessage = "Hello! Welcome to our business.", 
       businessInfo = "We provide quality services.", 
       services = [], 
-      qna = [], 
-      aiEnabled = true, 
-      aiPersonality = "Be helpful and friendly."
+      qna = []
     } = config;
 
     let response = "";
@@ -58,12 +55,8 @@ async function handleMessage(msg) {
       
       if (matchedQna) {
         response = matchedQna.answer;
-      } else if (aiEnabled) {
-        // 3. AI INTEGRATION
-        const aiResponse = await askAI(text, { businessInfo, services, aiPersonality });
-        response = aiResponse;
       } else {
-        // 4. FALLBACK
+        // 3. FALLBACK
         response = "Sorry, I didn't understand. Type 'help' to see available commands.";
       }
     }

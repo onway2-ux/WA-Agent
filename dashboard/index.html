@@ -427,9 +427,6 @@
                 <li class="nav-item" onclick="showSection('qna')">
                     <i class="fas fa-question-circle"></i> Q&A Manager
                 </li>
-                <li class="nav-item" onclick="showSection('ai-settings')">
-                    <i class="fas fa-robot"></i> AI Settings
-                </li>
                 <li class="nav-item" onclick="showSection('logs')">
                     <i class="fas fa-history"></i> Message Logs
                 </li>
@@ -533,24 +530,6 @@
                     <div id="qna-list">
                         <!-- QnA will be injected here -->
                     </div>
-                </div>
-            </div>
-
-            <!-- Section: AI Settings -->
-            <div id="ai-settings" class="section">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>AI Integration</h3>
-                        <label class="switch">
-                            <input type="checkbox" id="ai-enabled-toggle" onchange="toggleAI(this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div class="input-group">
-                        <label>AI Personality / Tone Instructions</label>
-                        <textarea id="ai-personality-input" rows="5" placeholder="e.g. Be professional and formal..."></textarea>
-                    </div>
-                    <button class="btn" onclick="saveConfig('aiPersonality', 'ai-personality-input')">Save Settings</button>
                 </div>
             </div>
 
@@ -697,8 +676,6 @@
                 // Fill inputs
                 document.getElementById('welcome-msg-input').value = currentConfig.welcomeMessage || "";
                 document.getElementById('business-info-input').value = currentConfig.businessInfo || "";
-                document.getElementById('ai-personality-input').value = currentConfig.aiPersonality || "";
-                document.getElementById('ai-enabled-toggle').checked = currentConfig.aiEnabled;
                 
                 renderServices();
                 renderQna();
@@ -803,10 +780,6 @@
             const val = document.getElementById(inputId).value;
             await update(ref(db, '/config'), { [key]: val });
             alert('Saved successfully!');
-        };
-
-        window.toggleAI = async (enabled) => {
-            await update(ref(db, '/config'), { aiEnabled: enabled });
         };
 
         // Services CRUD

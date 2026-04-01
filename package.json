@@ -53,7 +53,6 @@ Show me updated ai.js and bot.yml files completely.{
     "qrcode-terminal": "latest",
     "qrcode": "latest",
     "firebase-admin": "latest",
-    "openai": "latest",
     "axios": "latest",
     "pino": "latest"
   },
