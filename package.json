@@ -1,4 +1,43 @@
-{
+My WhatsApp bot is sending this error message to users:
+"I'm sorry, I'm having trouble processing your request 
+right now. Please try again later."
+
+This means the DeepSeek AI API call is failing silently.
+
+REQUIRED FIXES in ai.js:
+
+1. Add detailed console.log at every step:
+   - console.log("AI Request starting...")
+   - console.log("Base URL:", process.env.DEEPSEEK_BASE_URL)
+   - console.log("API Key exists:", !!process.env.DEEPSEEK_API_KEY)
+   - console.log("Model:", "deepseek-r1-0528")
+   - console.log("AI Response received:", response)
+
+2. In the catch block, log the FULL error:
+   - console.error("AI Error full details:", error)
+   - console.error("AI Error message:", error.message)
+   - console.error("AI Error status:", error.status)
+   - console.error("AI Error response:", error.response?.data)
+
+3. Make sure OpenAI client is initialized exactly like this:
+   
+   const openai = new OpenAI({
+     apiKey: process.env.DEEPSEEK_API_KEY,
+     baseURL: process.env.DEEPSEEK_BASE_URL,
+   });
+
+4. Make sure GitHub Actions workflow has these 
+   environment variables passed to the run step:
+
+   - name: Run bot
+     env:
+       FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+       DEEPSEEK_BASE_URL: ${{ secrets.DEEPSEEK_BASE_URL }}
+       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+     run: node bot/index.js
+
+Show me updated ai.js and bot.yml files completely.{
   "name": "whatsapp-bot",
   "version": "1.0.0",
   "description": "WhatsApp Business Bot with Admin Dashboard",
