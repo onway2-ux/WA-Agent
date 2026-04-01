@@ -34,14 +34,15 @@ jobs:
             libxi6 \
             libxtst6 \
             libnss3 \
-            libcups2 \
+            libcups2t64 \
             libxss1 \
             libxrandr2 \
-            libasound2 \
+            libasound2t64 \
             libpangocairo-1.0-0 \
             libatk1.0-0 \
             libatk-bridge2.0-0 \
-            libgtk-3-0
+            libgtk-3-0 \
+            libgbm1
 
       - name: Install Dependencies
         run: npm install
