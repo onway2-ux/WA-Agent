@@ -10,10 +10,11 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "latest",
+    "whatsapp-web.js": "latest",
+    "qrcode-terminal": "latest",
+    "qrcode": "latest",
     "firebase-admin": "latest",
     "openai": "latest",
-    "qrcode": "latest",
     "axios": "latest",
     "pino": "latest"
   },

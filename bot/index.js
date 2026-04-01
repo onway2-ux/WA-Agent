@@ -1,30 +1,34 @@
-const { 
-  default: makeWASocket, 
-  DisconnectReason, 
-  useMultiFileAuthState 
-} = require('@whiskeysockets/baileys');
-const pino = require('pino');
-const { writeData, readData, db } = require('./firebase');
-const { generateAndUploadQR } = require('./qr');
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcodeTerminal = require('qrcode-terminal');
+const QRCode = require('qrcode');
+const { writeData, readData } = require('./firebase');
 const { handleMessage } = require('./handler');
 
-// Set pino logger to silent
-const logger = pino({ level: 'silent' });
-
 /**
- * Initialize WhatsApp connection using Baileys
+ * Initialize WhatsApp connection using whatsapp-web.js
  */
 async function connectToWhatsApp() {
-  // Use multi-file auth state for persistence
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+  console.log('Bot connection process started using whatsapp-web.js...');
 
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: false, // We'll handle this ourselves in qr.js for better control
-    logger
+  const client = new Client({
+    authStrategy: new LocalAuth({
+      dataPath: '.wwebjs_auth'
+    }),
+    puppeteer: {
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null
+    }
   });
-
-  console.log('Bot connection process started...');
 
   // INITIALIZE FIREBASE RTDB STRUCTURE (if not exists)
   console.log('Checking Firebase RTDB structure...');
@@ -52,53 +56,46 @@ async function connectToWhatsApp() {
     console.log('Firebase RTDB structure found.');
   }
 
-  // CONNECTION EVENTS
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
-
-    // QR EVENT
-    if (qr) {
-      console.log('WhatsApp QR event detected.');
-      await generateAndUploadQR(qr);
-      
-      // Keep process alive for at least 5 minutes to allow for scan
-      console.log('QR waiting scan. Bot will stay active...');
-    }
-
-    // CONNECTION SUCCESS
-    if (connection === 'open') {
-      console.log('WhatsApp connection successfully opened!');
-      await writeData('/bot/status', 'connected');
-      await writeData('/bot/qr', null);
-      console.log('Bot status updated to connected.');
-    }
-
-    // CONNECTION CLOSE
-    if (connection === 'close') {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log('Connection closed. Reconnect recommended:', shouldReconnect);
-      await writeData('/bot/status', 'disconnected');
-
-      // Attempt reconnect once
-      if (shouldReconnect) {
-        console.log('Attempting to reconnect in 5 seconds...');
-        setTimeout(() => connectToWhatsApp(), 5000);
-      } else {
-        console.log('Logged out or fatal error. Please restart manually.');
-      }
+  // QR EVENT
+  client.on('qr', async (qr) => {
+    console.log('WhatsApp QR event detected.');
+    
+    // Print QR in terminal
+    qrcodeTerminal.generate(qr, { small: true });
+    
+    // Convert QR to base64 for Admin Dashboard
+    try {
+      const base64QR = await QRCode.toDataURL(qr);
+      await writeData('/bot/qr', base64QR);
+      await writeData('/bot/status', 'waiting_scan');
+      console.log("QR Code generated and saved to Firebase!");
+    } catch (err) {
+      console.error('Error generating base64 QR:', err);
     }
   });
 
-  // SAVE CREDS ON UPDATE
-  sock.ev.on('creds.update', async () => {
-    console.log('Auth credentials updated.');
-    await saveCreds();
+  // READY EVENT
+  client.on('ready', async () => {
+    console.log("WhatsApp bot connected successfully!");
+    await writeData('/bot/status', 'connected');
+    await writeData('/bot/qr', null);
+  });
+
+  // DISCONNECTED EVENT
+  client.on('disconnected', async (reason) => {
+    console.log("Bot disconnected!", reason);
+    await writeData('/bot/status', 'disconnected');
   });
 
   // MESSAGE EVENT
-  sock.ev.on('messages.upsert', async (m) => {
+  client.on('message', async (msg) => {
     console.log('New message event detected.');
-    await handleMessage(sock, m);
+    await handleMessage(msg);
+  });
+
+  // AUTH FAILURE
+  client.on('auth_failure', (msg) => {
+    console.error('AUTHENTICATION FAILURE', msg);
   });
 
   // HEARTBEAT (Update /bot/lastSeen every 30 seconds)
@@ -111,12 +108,14 @@ async function connectToWhatsApp() {
     }
   }, 30000);
 
-  // KEEP PROCESS ALIVE (Prevent GitHub Actions from exiting too early)
-  // Check every 1 minute if we are still connected or waiting for QR
+  // KEEP PROCESS ALIVE
   setInterval(async () => {
     const status = await readData('/bot/status');
     console.log(`Keep-alive check: Current status is "${status}"`);
   }, 60000);
+
+  // Initialize the client
+  client.initialize();
 }
 
 // Start the bot

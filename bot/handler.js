@@ -1,24 +1,20 @@
-const { readData, pushData, db } = require('./firebase');
+const { readData, db } = require('./firebase');
 const { askAI } = require('./ai');
 
 /**
- * Handle incoming WhatsApp messages
- * @param {object} sock - Baileys socket
- * @param {object} m - Baileys message object
+ * Handle incoming WhatsApp messages using whatsapp-web.js
+ * @param {object} msg - whatsapp-web.js message object
  */
-async function handleMessage(sock, m) {
-  if (!m.messages || !m.messages[0]) return;
-  const msg = m.messages[0];
-  if (!msg.message || msg.key.fromMe) return;
-
-  const sender = msg.key.remoteJid;
-  const text = msg.message.conversation || 
-               msg.message.extendedTextMessage?.text || 
-               msg.message.imageMessage?.caption || 
-               "";
+async function handleMessage(msg) {
+  const sender = msg.from;
+  const text = msg.body || "";
 
   // Ignore group messages
   if (sender.endsWith('@g.us')) return;
+
+  // Ignore messages from the bot itself (if applicable)
+  // whatsapp-web.js doesn't easily provide fromMe on incoming events like Baileys, 
+  // but we can check the sender if needed.
 
   console.log(`Received message from ${sender}: ${text}`);
 
@@ -74,7 +70,7 @@ async function handleMessage(sock, m) {
 
     // Send the response
     if (response) {
-      await sock.sendMessage(sender, { text: response });
+      await msg.reply(response);
       
       // LOG TO FIREBASE (Limit to last 100 entries)
       const logEntry = {
